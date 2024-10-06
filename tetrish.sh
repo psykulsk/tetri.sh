@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eo pipefail
+
 # check if script is executed with bash, version >= 4.0
 if [[ -z $BASH_VERSION ]]; then
 		echo 'Execute this script with bash, version >= 4.0'
@@ -29,8 +31,8 @@ declare -A screen
 
 declare -i piece_id 
 
-declare -i piece_x
-declare -i piece_y
+declare -i piece_col
+declare -i piece_row
 
 # key input from user
 key=""
@@ -48,30 +50,34 @@ declare -r CORNER_ICON="+"
 
 # Tetrimino shapes as arrays of coordinates
 pieces=(
-    "0 0 0 1 0 2 0 3" # I vertical 
-    "0 0 1 0 2 0 3 0" # I horizontal 
-    "0 0 0 1 1 1 1 0" # square
+    "0 0 1 0 2 0 3 0" # I vertical 
+    "0 0 0 1 0 2 0 3" # I horizontal
+    "0 0 0 1 1 0 1 1" # square
+    "0 0 1 0 2 0 2 1" # L
 )
 
 pieces_vertical_check_pixels=(
-    "0 3" # I vertical 
-    "0 0 1 0 2 0 3 0" # I horizontal 
-    "0 1 1 1" # square
+    "3 0" # bottom pixel of I vertical 
+    "0 0 0 1 0 2 0 3" # all pixels of I horizontal
+    "1 0 1 1" # bottom pixels square
+    "2 0 2 1" # L
 )
 
 pieces_horizontal_left_check_pixels=(
-    "0 0 0 1 0 2 0 3" # I vertical 
-    "0 0" # I horizontal 
-    "0 0 0 1" # square
+    "0 0 1 0 2 0 3 0" # all pixels of I vertical 
+    "0 0" # left pixel of I horizontal 
+    "0 0 1 0" # left pixels of square 
+    "0 0 1 0 2 0" # L
 )
 
 pieces_horizontal_right_check_pixels=(
-    "0 0 0 1 0 2 0 3" # I vertical 
-    "3 0" # I horizontal 
-    "1 0 1 1" # square
+    "0 0 1 0 2 0 3 0" # all pixels of I vertical 
+    "0 3" # right pixel of I horizontal 
+    "0 1 1 1" # right pixels of square
+    "2 1" # L
 )
 
-pieces_starting_position=(1 2)
+pieces_starting_position=(0 2 3)
 
 parse_args ()
 {
@@ -192,19 +198,19 @@ print_screen ()
 handle_input ()
 {
 	if [[ "$1" = "$ARROW_UP" ]]; then
-        test1=1
+        :
 	elif [[ "$1" = "$ARROW_DOWN" ]]; then
-        test1=1
+        :
 	elif [[ "$1" = "$ARROW_RIGHT" ]]; then
-        if check_piece_horizontal_collission; then
+        if check_piece_horizontal_right_collission; then
             clear_piece
-            piece_x=$(( piece_x + 1 ))
+            piece_col=$(( piece_col + 1 ))
             draw_piece
         fi
 	elif [[ "$1" = "$ARROW_LEFT" ]]; then
-        if check_piece_horizontal_collission; then
+        if check_piece_horizontal_left_collission; then
             clear_piece
-            piece_x=$(( piece_x - 1 ))
+            piece_col=$(( piece_col - 1 ))
             draw_piece
         fi
 	else
@@ -214,42 +220,20 @@ handle_input ()
 
 spawn_random_piece()
 {
-    local starting_piece_pos_id=$(( $RANDOM%2 ))
+    local starting_piece_pos_id=$(( $RANDOM%( ${#pieces_starting_position[@]}) ))
     piece_id=${pieces_starting_position[$starting_piece_pos_id]}
-    piece_x=$(( cols/2 ))
-    piece_y=1
+    piece_col=$(( cols/2 ))
+    piece_row=1
     draw_piece
-}
-
-calc_new_snake_head_x () {
-	local cur_head_x=$1
-	local v_x=$2
-	new_head_x=$(( cur_head_x+v_x ))
-	if (( new_head_x == 0 )); then
-		new_head_x=$(( cols-1 ))
-	elif (( new_head_x == cols )); then
-		new_head_x=1
-	fi
-}
-
-calc_new_snake_head_y () {
-	local cur_head_y=$1
-	local v_y=$2
-	new_head_y=$(( cur_head_y+v_y ))
-	if (( new_head_y == 0 )); then
-		new_head_y=$(( rows-1 ))
-	elif (( new_head_y == rows )); then
-		new_head_y=1
-	fi
 }
 
 clear_piece()
 {
     current_piece=(${pieces[$piece_id]})
     for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
-		local x=${current_piece[$i]}
-		local y=${current_piece[$i+1]}
-		screen[$((y + piece_y)),$((x + piece_x))]=$EMPTY
+		local row=${current_piece[$i]}
+		local col=${current_piece[$i+1]}
+		screen[$((row + piece_row)),$((col + piece_col))]=$EMPTY
 	done
 }
 
@@ -257,20 +241,20 @@ draw_piece()
 {
     current_piece=(${pieces[$piece_id]})
     for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
-		local x=${current_piece[$i]}
-		local y=${current_piece[$i+1]}
-		screen[$((y + piece_y)),$((x + piece_x))]=$BLOCK_ICON
+		local row=${current_piece[$i]}
+		local col=${current_piece[$i+1]}
+		screen[$((row + piece_row)),$((col + piece_col))]=$BLOCK_ICON
 	done
 }
 
 check_piece_vertical_collission() {
-    current_piece_vertical_check_pixels=(${pieces_vertical_check_pixels[$piece_id]})
+    local current_piece_vertical_check_pixels=(${pieces_vertical_check_pixels[$piece_id]})
+    #echo "current_piece_vertical_check_pixels=${current_piece_vertical_check_pixels[@]}"
     for ((i = 0; i < ${#current_piece_vertical_check_pixels[@]}; i+=2)); do
-        local pixel_x=$(( piece_x + ${current_piece_vertical_check_pixels[$i]} ))
-        local pixel_y=$(( piece_y + ${current_piece_vertical_check_pixels[$i+1]} ))
-        local pixel_below_y=$(( pixel_y + 1 ))
-        local pixel_below=${screen[$pixel_below_y,$pixel_x]}
-        #echo "pixel_below=${pixel_below}end"
+        local pixel_row=$(( piece_row + ${current_piece_vertical_check_pixels[$i]} ))
+        local pixel_col=$(( piece_col + ${current_piece_vertical_check_pixels[$i+1]} ))
+        local pixel_below_row=$(( pixel_row + 1 ))
+        local pixel_below=${screen[$pixel_below_row,$pixel_col]}
         if [[ $pixel_below != $EMPTY ]]; then 
             return 1
         fi
@@ -278,23 +262,27 @@ check_piece_vertical_collission() {
     return 0
 }
 
-check_piece_horizontal_collission() {
+check_piece_horizontal_left_collission() {
     local current_piece_horizontal_left_check_pixels=(${pieces_horizontal_left_check_pixels[$piece_id]})
-    for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
-        local pixel_x=$(( piece_x + ${current_piece[$i]} ))
-        local pixel_y=$(( piece_y + ${current_piece[$i+1]} ))
-        local pixel_left_x=$(( pixel_x - 1 ))
-        local pixel_left=${screen[$pixel_y,$pixel_left_x]}
+    for ((i = 0; i < ${#current_piece_horizontal_left_check_pixels[@]}; i+=2)); do
+        local pixel_row=$(( piece_row + ${current_piece_horizontal_left_check_pixels[$i]} ))
+        local pixel_col=$(( piece_col + ${current_piece_horizontal_left_check_pixels[$i+1]} ))
+        local pixel_left_col=$(( pixel_col - 1 ))
+        local pixel_left=${screen[$pixel_row,$pixel_left_col]}
         if [[ $pixel_left != $EMPTY ]]; then 
             return 1
         fi
 	done
+    return 0
+}
+
+check_piece_horizontal_right_collission() {
     local current_piece_horizontal_right_check_pixels=(${pieces_horizontal_right_check_pixels[$piece_id]})
-    for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
-        local pixel_x=$(( piece_x + ${current_piece[$i]} ))
-        local pixel_y=$(( piece_y + ${current_piece[$i+1]} ))
-        local pixel_right_x=$(( pixel_x - 1 ))
-        local pixel_right=${screen[$pixel_y,$pixel_right_x]}
+    for ((i = 0; i < ${#current_piece_horizontal_right_check_pixels[@]}; i+=2)); do
+        local pixel_row=$(( piece_row + ${current_piece_horizontal_right_check_pixels[$i]} ))
+        local pixel_col=$(( piece_col + ${current_piece_horizontal_right_check_pixels[$i+1]} ))
+        local pixel_right_col=$(( pixel_col + 1 ))
+        local pixel_right=${screen[$pixel_row,$pixel_right_col]}
         if [[ $pixel_right != $EMPTY ]]; then 
             return 1
         fi
@@ -321,7 +309,7 @@ game ()
         fi
     fi
 	clear_piece
-    piece_y=$(( piece_y + 1))
+    piece_row=$(( piece_row + 1))
     draw_piece
     if ! check_piece_vertical_collission; then
         spawn_random_piece
@@ -386,8 +374,8 @@ trap tick ALRM
 parse_args "$@"
 # initialize game area
 clear_game_area_screen
-print_screen
 spawn_random_piece
+print_screen
 # start game
 tick
 # poll for user input in loop
