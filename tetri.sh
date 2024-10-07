@@ -62,6 +62,18 @@ pieces=(
     "0 0 0 1 0 2 1 0" # L 1 rot to right
     "0 0 0 1 1 1 2 1" # L 2 rot to right
     "0 2 1 0 1 1 1 2" # L 3 rot to right
+    "0 0 0 1 1 1 1 2" # Z
+    "0 1 1 0 1 1 2 0" # Z 1 rot to right
+    "0 1 0 2 1 0 1 1" # inverse Z
+    "0 0 1 0 1 1 2 1" # inverse Z 1 rot to right
+    "0 1 1 1 2 0 2 1" # mirror L
+    "0 0 1 0 1 1 1 2" # mirror L 1 rot to right
+    "0 0 0 1 1 0 2 0" # mirror L 2 rot to right
+    "0 0 0 1 0 2 1 2" # mirror L 3 rot to right
+    "0 1 1 0 1 1 1 2" # T
+    "0 0 1 0 1 1 2 0" # T 1 rot to right
+    "0 0 0 1 0 2 1 1" # T 2 rot to right
+    "0 1 1 0 1 1 2 1" # T 3 rot to right
 )
 
 pieces_next_piece_rot_right=(
@@ -72,6 +84,18 @@ pieces_next_piece_rot_right=(
     5 # L 1 rot to right
     6 # L 2 rot to right
     3 # L 3 rot to right
+    8 # Z
+    7 # Z 1 rot to right
+    10 # inverse Z
+    9 # inverse Z 1 rot to right
+    12 # mirror L
+    13 # mirror L 1 rot to right
+    14 # mirror L 2 rot to right
+    11 # mirror L 3 rot to right
+    16 # T
+    17 # T 1 rot to right
+    18 # T 2 rot to right
+    15 # T 3 rot to right
 )
 
 pieces_next_piece_rot_left=(
@@ -82,6 +106,18 @@ pieces_next_piece_rot_left=(
     3 # L 1 rot to right
     4 # L 2 rot to right
     5 # L 3 rot to right
+    8 # Z
+    7 # Z 1 rot to right
+    10 # inverse Z
+    9 # inverse Z 1 rot to right
+    14 # mirror L
+    11 # mirror L 1 rot to right
+    12 # mirror L 2 rot to right
+    13 # mirror L 3 rot to right
+    18 # T
+    15 # T 1 rot to right
+    16 # T 2 rot to right
+    17 # T 3 rot to right
 )
 
 pieces_vertical_check_pixels=(
@@ -92,6 +128,18 @@ pieces_vertical_check_pixels=(
     "0 1 0 2 1 0" # L 1 rot to right
     "0 0 2 1" # L 2 rot to right
     "1 0 1 1 1 2" # L 3 rot to right
+    "0 0 1 1 1 2" # Z
+    "1 1 2 0" # Z 1 rot to right
+    "0 2 1 0 1 1" # inverse Z
+    "1 0 2 1" # inverse Z 1 rot to right
+    "2 0 2 1" # mirror L
+    "1 0 1 1 1 2" # mirror L 1 rot to right
+    "0 1 2 0" # mirror L 2 rot to right
+    "0 0 0 1 1 2" # mirror L 3 rot to right
+    "1 0 1 1 1 2" # T
+    "1 1 2 0" # T 1 rot to right
+    "0 0 0 2 1 1" # T 2 rot to right
+    "1 0 2 1" # T 3 rot to right
 )
 
 pieces_horizontal_left_check_pixels=(
@@ -102,6 +150,18 @@ pieces_horizontal_left_check_pixels=(
     "0 0 1 0" # L 1 rot to right
     "0 0 1 1 2 1" # L 2 rot to right
     "0 2 1 2" # L 3 rot to right
+    "0 0 1 1" # Z
+    "0 1 1 0 2 0" # Z 1 rot to right
+    "0 1 1 0" # inverse Z
+    "0 0 1 0 2 1" # inverse Z 1 rot to right
+    "0 1 1 1 2 0" # mirror L
+    "0 0 1 0" # mirror L 1 rot to right
+    "0 0 1 0 2 0" # mirror L 2 rot to right
+    "0 0 1 2" # mirror L 3 rot to right
+    "0 1 1 0" # T
+    "0 0 1 0 2 0" # T 1 rot to right
+    "0 0 1 1" # T 2 rot to right
+    "0 1 1 0 2 1" # T 3 rot to right
 )
 
 pieces_horizontal_right_check_pixels=(
@@ -112,9 +172,21 @@ pieces_horizontal_right_check_pixels=(
     "0 2 1 0" # L 1 rot to right
     "0 1 1 1 2 1" # L 2 rot to right
     "0 2 1 2" # L 3 rot to right
+    "0 1 1 2" # Z
+    "0 1 1 1 2 0" # Z 1 rot to right
+    "0 2 1 1" # inverse Z
+    "0 0 1 1 2 1" # inverse Z 1 rot to right
+    "0 1 1 1 2 1" # mirror L
+    "0 0 1 2" # mirror L 1 rot to right
+    "0 1 1 0 2 0" # mirror L 2 rot to right
+    "0 2 1 2" # mirror L 3 rot to right
+    "0 1 1 2" # T
+    "0 0 1 1 2 0" # T 1 rot to right
+    "0 2 1 1" # T 2 rot to right
+    "0 1 1 1 2 1" # T 3 rot to right
 )
 
-pieces_starting_position=(0 2 3)
+pieces_starting_position=(0 2 3 7 9 11 15)
 
 parse_args ()
 {
