@@ -260,11 +260,11 @@ set_speed ()
 usage ()
 {
     echo "usage: $0 [-c cols ] [-r rows] [-s speed]"
-    echo "controls: left, right and down arrows, z and x for rotation"
+    echo "controls: left, right and down arrows for movement, z and x for rotation"
     echo "  -h display help"
     echo "  -c cols specify game area cols. Make sure it's not higher then the actual terminal's width. "
     echo "  -r rows specify game area rows. Make sure it's not higher then the actual terminal's height."
-    echo "  -s speed specify snake speed. Value from 1-10."
+    echo "  -s speed specify game speed. Value from 1-10."
 }
 
 clear_game_area_screen ()
