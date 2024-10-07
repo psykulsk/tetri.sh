@@ -185,6 +185,7 @@ set_speed ()
 usage ()
 {
     echo "usage: $0 [-c cols ] [-r rows] [-s speed]"
+    echo "controls: left, right and down arrows, z and x for rotation"
     echo "  -h display help"
     echo "  -c cols specify game area cols. Make sure it's not higher then the actual terminal's width. "
     echo "  -r rows specify game area rows. Make sure it's not higher then the actual terminal's height."
@@ -234,7 +235,7 @@ handle_input ()
 	if [[ "$1" = "$ARROW_UP" ]]; then
         :
 	elif [[ "$1" = "$ARROW_DOWN" ]]; then
-        :
+        move_piece_down
 	elif [[ "$1" = "$ARROW_RIGHT" ]]; then
         if check_piece_horizontal_right_collission; then
             clear_piece
@@ -252,18 +253,18 @@ handle_input ()
         local prev_piece=$piece_id
         local next_piece=${pieces_next_piece_rot_right[$prev_piece]}
         clear_piece
-        #if check_next_piece_collision $next_piece; then
+        if check_next_piece_collission $next_piece; then
             piece_id=$next_piece
-        #fi
+        fi
         draw_piece
 	elif [[ "$1" = "$Z" ]]; then
         # try to rotate left 
         local prev_piece=$piece_id
         local next_piece=${pieces_next_piece_rot_left[$prev_piece]}
         clear_piece
-        #if check_next_piece_collision $next_piece; then
+        if check_next_piece_collission $next_piece; then
             piece_id=$next_piece
-        #fi
+        fi
         draw_piece
 	else
 		:
@@ -301,7 +302,6 @@ draw_piece()
 
 check_piece_vertical_collission() {
     local current_piece_vertical_check_pixels=(${pieces_vertical_check_pixels[$piece_id]})
-    #echo "current_piece_vertical_check_pixels=${current_piece_vertical_check_pixels[@]}"
     for ((i = 0; i < ${#current_piece_vertical_check_pixels[@]}; i+=2)); do
         local pixel_row=$(( piece_row + ${current_piece_vertical_check_pixels[$i]} ))
         local pixel_col=$(( piece_col + ${current_piece_vertical_check_pixels[$i+1]} ))
@@ -343,16 +343,65 @@ check_piece_horizontal_right_collission() {
 }
 
 check_next_piece_collission() {
-    next_piece=(${pieces[$1]})
+    local next_piece=(${pieces[$1]})
     for ((i = 0; i < ${#next_piece[@]}; i+=2)); do
-		local row=${next_piece[$i]}
-		local col=${next_piece[$i+1]}
-        local pixel=${screen[$row,$col]}
+        local pixel_row=$(( piece_row + ${next_piece[$i]} ))
+        local pixel_col=$(( piece_col + ${next_piece[$i+1]} ))
+        local pixel=${screen[$pixel_row,$pixel_col]}
         if [[ $pixel != $EMPTY ]]; then 
             return 1
         fi
 	done
     return 0
+}
+
+check_full_line() {
+    local current_piece=(${pieces[$piece_id]})
+    local rows_to_remove=()
+    for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
+        local pixel_row=$(( piece_row + ${current_piece[$i]} ))
+        local pixel_col=$(( piece_col + ${current_piece[$i+1]} ))
+        local pixel=${screen[$pixel_row,$pixel_col]}
+        local full_line=1
+		for ((j=1;j<cols;j++)); do
+			local pixel_to_check=${screen[$pixel_row,$j]};
+            if [[ $pixel_to_check != $BLOCK_ICON ]]; then
+                full_line=0 
+            fi
+		done
+        if [[ $full_line -eq 1 ]]; then 
+            rows_to_remove+=([${pixel_row}]=1)
+        fi
+	done
+
+    for row_to_delete in "${!rows_to_remove[@]}"
+    do
+        remove_row $row_to_delete
+    done
+    return 0
+}
+
+remove_row() {
+	for ((i=$1;i>1;i--)); do
+		for ((j=0;j<cols+1;j++)); do
+            local row_above=$(( $i-1 ))
+            screen[$i,$j]=${screen[$row_above,$j]}
+		done
+	done
+}
+
+move_piece_down() {
+    for (( ; ; ))
+    do
+        clear_piece
+        piece_row=$(( piece_row + 1))
+        draw_piece
+        if ! check_piece_vertical_collission; then
+            check_full_line
+            spawn_random_piece
+            return 0
+        fi
+    done
 }
 
 check_end_condition() {
@@ -377,39 +426,9 @@ game ()
     piece_row=$(( piece_row + 1))
     draw_piece
     if ! check_piece_vertical_collission; then
+        check_full_line
         spawn_random_piece
     fi
-    
-	# local head_x=${snakebod_x[0]}
-	# local head_y=${snakebod_y[0]}
-	# declare -i new_head_x
-	# declare -i new_head_y
-	# calc_new_snake_head_x $head_x $vel_x
-	# calc_new_snake_head_y $head_y $vel_y
-	# local snake_length=${#snakebod_x[@]}
-
-	# # check if new head positions is not inside snake
-	# for ((i=0;i<snake_length-1;i++));
-	# do
-	# 	if [[ ${snakebod_y[i]} -eq $new_head_y ]] && [[ ${snakebod_x[i]} -eq $new_head_x ]]; then
-	# 		set_cursor_below_game
-	# 		echo Snake ate itself. You lose!
-	# 		exit 0
-	# 	fi
-	# done
-
-	# # if head is were food is, do not remove the last element of snake body and set new food position
-	# if (( new_head_x == food_x )) && (( new_head_y == food_y )); then
-	# 	snakebod_x=($new_head_x ${snakebod_x[@]:0:${#snakebod_x[@]}})
-	# 	snakebod_y=($new_head_y ${snakebod_y[@]:0:${#snakebod_y[@]}})
-	# 	draw_snake
-	# 	check_win_cond
-	# 	set_food
-	# else
-	# 	snakebod_x=($new_head_x ${snakebod_x[@]:0:${#snakebod_x[@]}-1})
-	# 	snakebod_y=($new_head_y ${snakebod_y[@]:0:${#snakebod_y[@]}-1})
-	# 	draw_snake
-	# fi
 }
 
 set_pixel ()
