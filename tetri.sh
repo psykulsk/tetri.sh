@@ -23,12 +23,15 @@ trap 'tput cnorm; echo Exitting $0' EXIT
 # declare default options
 declare -i cols=12
 declare -i rows=24
-Y_TIME=0.14
-REFRESH_TIME=$Y_TIME
+BASE_TIME=0.14
+REFRESH_TIME=$BASE_TIME
 
 # holds a screen matrix in an associative array
 declare -A screen
 
+declare -i score=0 
+declare -i level=1 
+declare -i lines_cleared=0 
 declare -i piece_id 
 
 declare -i piece_col
@@ -145,41 +148,41 @@ set_speed ()
 
 	case ${speed_level} in
 		1)
-		Y_TIME=1
+		BASE_TIME=1
 		;;
 		2)
-		Y_TIME=0.8
+		BASE_TIME=0.8
 		;;
 		3)
-		Y_TIME=0.6
+		BASE_TIME=0.6
 		;;
 		4)
-		Y_TIME=0.4
+		BASE_TIME=0.4
 		;;
 		5)
-		Y_TIME=0.2
+		BASE_TIME=0.2
 		;;
 		6)
-		Y_TIME=0.16
+		BASE_TIME=0.16
 		;;
 		7)
-		Y_TIME=0.12
+		BASE_TIME=0.12
 		;;
 		8)
-		Y_TIME=0.08
+		BASE_TIME=0.08
 		;;
 		9)
-		Y_TIME=0.04
+		BASE_TIME=0.04
 		;;
 		10)
-		Y_TIME=0.02
+		BASE_TIME=0.02
 		;;
 		*)
 		usage
 		exit 1
 		;;
 	esac
-	REFRESH_TIME=$Y_TIME
+	REFRESH_TIME=$BASE_TIME
 }
 
 usage ()
@@ -228,6 +231,8 @@ print_screen ()
 		done
 		printf "\n"
 	done
+    echo "Score: $score"
+    echo "Level: $level"
 }
 
 handle_input ()
@@ -355,6 +360,8 @@ check_next_piece_collission() {
     return 0
 }
 
+score_for_line_deletion=(0 100 300 500 800)
+
 check_full_line() {
     local current_piece=(${pieces[$piece_id]})
     local rows_to_remove=()
@@ -373,7 +380,9 @@ check_full_line() {
             rows_to_remove+=([${pixel_row}]=1)
         fi
 	done
-
+    score+=${score_for_line_deletion[${#rows_to_remove[@]}]}
+    lines_cleared+=${#rows_to_remove[@]}
+    level=$(( 1+lines_cleared/2 ))
     for row_to_delete in "${!rows_to_remove[@]}"
     do
         remove_row $row_to_delete
@@ -397,6 +406,9 @@ move_piece_down() {
         piece_row=$(( piece_row + 1))
         draw_piece
         if ! check_piece_vertical_collission; then
+            # double piece score for quick down drop
+            add_piece_score
+            add_piece_score
             check_full_line
             spawn_random_piece
             return 0
@@ -414,6 +426,11 @@ check_end_condition() {
     return 0
 }
 
+add_piece_score () {
+    local current_piece=(${pieces[$piece_id]})
+    score+=$((${#current_piece[@]}/2))
+}
+
 game ()
 {
     if ! check_piece_vertical_collission; then
@@ -426,6 +443,7 @@ game ()
     piece_row=$(( piece_row + 1))
     draw_piece
     if ! check_piece_vertical_collission; then
+        add_piece_score
         check_full_line
         spawn_random_piece
     fi
