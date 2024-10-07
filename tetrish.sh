@@ -44,6 +44,8 @@ declare -r ARROW_UP="A"
 declare -r ARROW_DOWN="B"
 declare -r ARROW_RIGHT="C"
 declare -r ARROW_LEFT="D"
+declare -r X="x"
+declare -r Z="z"
 declare -r HORIZONTAL_BAR="-"
 declare -r VERTICAL_BAR="|"
 declare -r CORNER_ICON="+"
@@ -54,6 +56,29 @@ pieces=(
     "0 0 0 1 0 2 0 3" # I horizontal
     "0 0 0 1 1 0 1 1" # square
     "0 0 1 0 2 0 2 1" # L
+    "0 0 0 1 0 2 1 0" # L 1 rot to right
+    "0 0 0 1 1 1 2 1" # L 2 rot to right
+    "0 2 1 0 1 1 1 2" # L 3 rot to right
+)
+
+pieces_next_piece_rot_right=(
+    1 # I vertical 
+    0 # I horizontal
+    2 # square
+    4 # L
+    5 # L 1 rot to right
+    6 # L 2 rot to right
+    3 # L 3 rot to right
+)
+
+pieces_next_piece_rot_left=(
+    1 # I vertical 
+    0 # I horizontal
+    2 # square
+    6 # L
+    3 # L 1 rot to right
+    4 # L 2 rot to right
+    5 # L 3 rot to right
 )
 
 pieces_vertical_check_pixels=(
@@ -61,6 +86,9 @@ pieces_vertical_check_pixels=(
     "0 0 0 1 0 2 0 3" # all pixels of I horizontal
     "1 0 1 1" # bottom pixels square
     "2 0 2 1" # L
+    "0 1 0 2 1 0" # L 1 rot to right
+    "0 0 2 1" # L 2 rot to right
+    "1 0 1 1 1 2" # L 3 rot to right
 )
 
 pieces_horizontal_left_check_pixels=(
@@ -68,6 +96,9 @@ pieces_horizontal_left_check_pixels=(
     "0 0" # left pixel of I horizontal 
     "0 0 1 0" # left pixels of square 
     "0 0 1 0 2 0" # L
+    "0 0 1 0" # L 1 rot to right
+    "0 0 1 1 2 1" # L 2 rot to right
+    "0 2 1 2" # L 3 rot to right
 )
 
 pieces_horizontal_right_check_pixels=(
@@ -75,6 +106,9 @@ pieces_horizontal_right_check_pixels=(
     "0 3" # right pixel of I horizontal 
     "0 1 1 1" # right pixels of square
     "2 1" # L
+    "0 2 1 0" # L 1 rot to right
+    "0 1 1 1 2 1" # L 2 rot to right
+    "0 2 1 2" # L 3 rot to right
 )
 
 pieces_starting_position=(0 2 3)
@@ -213,6 +247,24 @@ handle_input ()
             piece_col=$(( piece_col - 1 ))
             draw_piece
         fi
+	elif [[ "$1" = "$X" ]]; then
+        # try to rotate right
+        local prev_piece=$piece_id
+        local next_piece=${pieces_next_piece_rot_right[$prev_piece]}
+        clear_piece
+        #if check_next_piece_collision $next_piece; then
+            piece_id=$next_piece
+        #fi
+        draw_piece
+	elif [[ "$1" = "$Z" ]]; then
+        # try to rotate left 
+        local prev_piece=$piece_id
+        local next_piece=${pieces_next_piece_rot_left[$prev_piece]}
+        clear_piece
+        #if check_next_piece_collision $next_piece; then
+            piece_id=$next_piece
+        #fi
+        draw_piece
 	else
 		:
 	fi
@@ -284,6 +336,19 @@ check_piece_horizontal_right_collission() {
         local pixel_right_col=$(( pixel_col + 1 ))
         local pixel_right=${screen[$pixel_row,$pixel_right_col]}
         if [[ $pixel_right != $EMPTY ]]; then 
+            return 1
+        fi
+	done
+    return 0
+}
+
+check_next_piece_collission() {
+    next_piece=(${pieces[$1]})
+    for ((i = 0; i < ${#next_piece[@]}; i+=2)); do
+		local row=${next_piece[$i]}
+		local col=${next_piece[$i+1]}
+        local pixel=${screen[$row,$col]}
+        if [[ $pixel != $EMPTY ]]; then 
             return 1
         fi
 	done
