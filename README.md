@@ -1,7 +1,7 @@
 # tetri.sh
 
 ```
-wget wget https://raw.githubusercontent.com/psykulsk/tetri.sh/main/tetri.sh
+wget https://raw.githubusercontent.com/psykulsk/tetri.sh/main/tetri.sh
 bash tetri.sh -h
 usage: tetri.sh [-c cols ] [-r rows] [-s speed]
 controls: left, right and down arrows, z and x for rotation
