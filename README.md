@@ -13,3 +13,5 @@ controls: left, right and down arrows, z and x for rotation
 
 Requires `bash --version` >= 4.0.
 
+![](demo.gif)
+
