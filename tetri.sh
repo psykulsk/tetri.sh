@@ -23,16 +23,20 @@ trap 'tput cnorm; echo Exitting $0' EXIT
 # declare default options
 declare -i cols=12
 declare -i rows=24
+declare -i next_piece_view_cols=4
+declare -i next_piece_view_rows=4
 BASE_TIME=0.14
 REFRESH_TIME=$BASE_TIME
 
 # holds a screen matrix in an associative array
 declare -A screen
+declare -A next_piece_view
 
 declare -i score=0 
 declare -i level=1 
 declare -i lines_cleared=0 
 declare -i piece_id 
+declare -i next_piece_id=0 
 
 declare -i piece_col
 declare -i piece_row
@@ -275,6 +279,7 @@ clear_game_area_screen ()
 		done
 	done
 	draw_game_area_boundaries
+    clear_next_piece
 }
 
 draw_game_area_boundaries()
@@ -305,6 +310,13 @@ print_screen ()
 	done
     echo "Score: $score"
     echo "Level: $level"
+    echo "Next piece:"
+	for ((i=0;i<next_piece_view_rows;i++)); do
+		for ((j=0;j<next_piece_view_cols;j++)); do
+			printf "${next_piece_view[$i,$j]}"
+		done
+		printf "\n"
+	done
 }
 
 handle_input ()
@@ -351,10 +363,13 @@ handle_input ()
 spawn_random_piece()
 {
     local starting_piece_pos_id=$(( $RANDOM%( ${#pieces_starting_position[@]}) ))
-    piece_id=${pieces_starting_position[$starting_piece_pos_id]}
+    piece_id=${next_piece_id}
+    next_piece_id=${pieces_starting_position[$starting_piece_pos_id]}
     piece_col=$(( cols/2 ))
     piece_row=1
     draw_piece
+    clear_next_piece
+    draw_next_piece
 }
 
 clear_piece()
@@ -367,13 +382,41 @@ clear_piece()
 	done
 }
 
-draw_piece()
+draw_piece_at_pos()
 {
+    local pos_row=$1
+    local pos_col=$2
     current_piece=(${pieces[$piece_id]})
     for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
 		local row=${current_piece[$i]}
 		local col=${current_piece[$i+1]}
-		screen[$((row + piece_row)),$((col + piece_col))]=$BLOCK_ICON
+		screen[$((row + $pos_row)),$((col + $pos_col))]=$BLOCK_ICON
+	done
+}
+
+draw_piece()
+{
+    draw_piece_at_pos $piece_row $piece_col
+}
+
+draw_next_piece()
+{
+    local pos_row=0
+    local pos_col=0
+    current_piece=(${pieces[$next_piece_id]})
+    for ((i = 0; i < ${#current_piece[@]}; i+=2)); do
+		local row=${current_piece[$i]}
+		local col=${current_piece[$i+1]}
+		next_piece_view[$((row + $pos_row)),$((col + $pos_col))]=$BLOCK_ICON
+	done
+}
+
+clear_next_piece()
+{
+	for ((i=0;i<next_piece_view_rows;i++)); do
+		for ((j=0;j<next_piece_view_cols;j++)); do
+			next_piece_view[$i,$j]=$EMPTY
+		done
 	done
 }
 
@@ -548,6 +591,8 @@ trap tick ALRM
 parse_args "$@"
 # initialize game area
 clear_game_area_screen
+spawn_random_piece
+clear_piece
 spawn_random_piece
 print_screen
 # start game
