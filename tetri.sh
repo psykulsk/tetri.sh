@@ -25,8 +25,7 @@ declare -i cols=12
 declare -i rows=24
 declare -i next_piece_view_cols=4
 declare -i next_piece_view_rows=4
-BASE_TIME=0.14
-REFRESH_TIME=$BASE_TIME
+REFRESH_TIME=0.02
 
 # holds a screen matrix in an associative array
 declare -A screen
@@ -153,7 +152,7 @@ pieces_horizontal_left_check_pixels=(
     "0 0 1 0 2 0" # L
     "0 0 1 0" # L 1 rot to right
     "0 0 1 1 2 1" # L 2 rot to right
-    "0 2 1 2" # L 3 rot to right
+    "0 2 1 0" # L 3 rot to right
     "0 0 1 1" # Z
     "0 1 1 0 2 0" # Z 1 rot to right
     "0 1 1 0" # inverse Z
@@ -195,7 +194,7 @@ pieces_starting_position=(0 2 3 7 9 11 15)
 parse_args ()
 {
 	local OPTIND opt
-	while getopts ":c:r:s:h" opt; do
+	while getopts ":c:r:l:h" opt; do
 		case ${opt} in
 			c )
 			cols=$OPTARG
@@ -203,8 +202,8 @@ parse_args ()
 			r )
 			rows=$OPTARG
 			;;
-			s )
-			set_speed "$OPTARG"
+			l )
+			set_start_level $OPTARG
 			;;
 			h )
 			usage
@@ -218,57 +217,25 @@ parse_args ()
 	done
 }
 
-set_speed () 
+set_start_level () 
 {
-	local speed_level=$1
+	start_level=$1
 
-	case ${speed_level} in
-		1)
-		BASE_TIME=1
-		;;
-		2)
-		BASE_TIME=0.8
-		;;
-		3)
-		BASE_TIME=0.6
-		;;
-		4)
-		BASE_TIME=0.4
-		;;
-		5)
-		BASE_TIME=0.2
-		;;
-		6)
-		BASE_TIME=0.16
-		;;
-		7)
-		BASE_TIME=0.12
-		;;
-		8)
-		BASE_TIME=0.08
-		;;
-		9)
-		BASE_TIME=0.04
-		;;
-		10)
-		BASE_TIME=0.02
-		;;
-		*)
+    if [[ $start_level -gt 10 ]] || [[ $start_level -lt 1 ]]; then
 		usage
 		exit 1
-		;;
-	esac
-	REFRESH_TIME=$BASE_TIME
+    fi
+    level=$start_level
 }
 
 usage ()
 {
-    echo "usage: $0 [-c cols ] [-r rows] [-s speed]"
+    echo "usage: $0 [-c cols ] [-r rows] [-l start level]"
     echo "controls: left, right and down arrows for movement, z and x for rotation"
     echo "  -h display help"
     echo "  -c cols specify game area cols. Make sure it's not higher then the actual terminal's width. "
     echo "  -r rows specify game area rows. Make sure it's not higher then the actual terminal's height."
-    echo "  -s speed specify game speed. Value from 1-10."
+    echo "  -l specify start level. Value from 1-10."
 }
 
 clear_game_area_screen ()
@@ -302,6 +269,7 @@ draw_game_area_boundaries()
 
 print_screen ()
 {
+	tput cup 0 0
 	for ((i=0;i<rows+1;i++)); do
 		for ((j=0;j<cols+1;j++)); do
 			printf "${screen[$i,$j]}"
@@ -319,12 +287,33 @@ print_screen ()
 	done
 }
 
+print_empty_screen ()
+{
+	tput cup 1 1
+	for ((i=1;i<rows;i++)); do
+		for ((j=1;j<cols;j++)); do
+			printf "${EMPTY}"
+		done
+		printf "\n"
+	done
+    printf "Score:                           \n"
+    printf "Level:                           \n"
+    printf "Next piece:                        \n"
+	for ((i=0;i<next_piece_view_rows;i++)); do
+		for ((j=0;j<next_piece_view_cols;j++)); do
+			printf "${EMPTY}"
+		done
+		printf "\n"
+	done
+}
+
 handle_input ()
 {
 	if [[ "$1" = "$ARROW_UP" ]]; then
         :
 	elif [[ "$1" = "$ARROW_DOWN" ]]; then
-        move_piece_down
+        game
+        #move_piece_down
 	elif [[ "$1" = "$ARROW_RIGHT" ]]; then
         if check_piece_horizontal_right_collission; then
             clear_piece
@@ -497,7 +486,7 @@ check_full_line() {
 	done
     score+=${score_for_line_deletion[${#rows_to_remove[@]}]}
     lines_cleared+=${#rows_to_remove[@]}
-    level=$(( 1+lines_cleared/2 ))
+    level=$(( $start_level + $(( ${lines_cleared}/2 )) ))
     for row_to_delete in "${!rows_to_remove[@]}"
     do
         remove_row $row_to_delete
@@ -549,19 +538,19 @@ add_piece_score () {
 game ()
 {
     if ! check_piece_vertical_collission; then
-        if ! check_end_condition; then 
-            echo You lose!
-            exit 0
+        add_piece_score
+        check_full_line
+        spawn_random_piece
+        if ! check_piece_vertical_collission; then
+            if ! check_end_condition; then 
+                echo You lose!
+                exit 0
+            fi
         fi
     fi
 	clear_piece
     piece_row=$(( piece_row + 1))
     draw_piece
-    if ! check_piece_vertical_collission; then
-        add_piece_score
-        check_full_line
-        spawn_random_piece
-    fi
 }
 
 set_pixel ()
@@ -575,20 +564,29 @@ set_cursor_below_game ()
 	tput cup $(($rows+1)) 0
 }
 
+game_tick=0
 # execute game loop, then sleep for REFRESH_TIME in a subshell and send SIGALRM to the current process
 # thanks to the trap below it will trigger the game loop again
 tick() {
+    game_tick=$(( ${game_tick} + 1 ))
 	tput cup 0 0
 	handle_input "$key"
     key="unknown"
-    clear
-	game
+    game_tick_slowdown_factor=$((15 - $level))
+    if [[ $game_tick_slowdown_factor -le 1 ]]; then
+        game_tick_slowdown_factor=1
+    fi 
+    mod_tick=$(( ${game_tick}%${game_tick_slowdown_factor} ))
+    if [[ $mod_tick -eq 0 ]]; then
+	    game
+    fi
     print_screen
 	( sleep $REFRESH_TIME; kill -s ALRM $$ &> /dev/null )&
 }
 trap tick ALRM
 
 parse_args "$@"
+clear
 # initialize game area
 clear_game_area_screen
 spawn_random_piece
