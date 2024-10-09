@@ -19,6 +19,8 @@ fi
 tput civis
 # reset to normal on exit
 trap 'tput cnorm;' EXIT
+# reset to normal on exit and clean screen
+trap 'tput cnorm; clear; exit;' SIGINT 
 
 # declare default options
 declare -i cols=12
