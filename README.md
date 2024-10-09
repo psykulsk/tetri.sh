@@ -16,6 +16,7 @@ controls: left, right and down arrows for movement, z and x for rotation
   -c cols specify game area cols. Make sure it's not higher then the actual terminal's width. 
   -r rows specify game area rows. Make sure it's not higher then the actual terminal's height.
   -l specify start level. Value from 1-10.
+  Exitting with Ctrl-C automatically cleans the screen.
 ```
 
 Requires `bash --version` >= 4.0. **Warning**, MacOS is distributed with bash 3 by default. Check the [instructions](#upgrading-bash-on-macos) on how to upgrade it.
