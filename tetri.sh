@@ -18,7 +18,7 @@ fi
 # remove highlighted terminal cursor
 tput civis
 # reset to normal on exit
-trap 'tput cnorm; echo Exitting $0' EXIT
+trap 'tput cnorm;' EXIT
 
 # declare default options
 declare -i cols=12
@@ -30,11 +30,12 @@ REFRESH_TIME=0.02
 # holds a screen matrix in an associative array
 declare -A screen
 declare -A next_piece_view
-
+  
 declare -i score=0 
 declare -i level=1 
 declare -i lines_cleared=0 
 declare -i piece_id 
+declare -i next_piece_offset_cols
 declare -i next_piece_id=0 
 
 declare -i piece_col
@@ -278,8 +279,10 @@ print_screen ()
 	done
     echo "Score: $score"
     echo "Level: $level"
-    echo "Next piece:"
+    tput cup 0 $next_piece_offset_cols
+    printf "Next: \n"
 	for ((i=0;i<next_piece_view_rows;i++)); do
+        tput cup $(($i + 1)) $next_piece_offset_cols
 		for ((j=0;j<next_piece_view_cols;j++)); do
 			printf "${next_piece_view[$i,$j]}"
 		done
@@ -543,6 +546,8 @@ game ()
         spawn_random_piece
         if ! check_piece_vertical_collission; then
             if ! check_end_condition; then 
+                print_screen
+                tput cup $(( $rows+4 )) 0
                 echo You lose!
                 exit 0
             fi
@@ -586,6 +591,7 @@ tick() {
 trap tick ALRM
 
 parse_args "$@"
+next_piece_offset_cols=$(( $cols + 3))
 clear
 # initialize game area
 clear_game_area_screen
