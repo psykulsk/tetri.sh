@@ -27,7 +27,7 @@ declare -i cols=12
 declare -i rows=24
 declare -i next_piece_view_cols=4
 declare -i next_piece_view_rows=4
-REFRESH_TIME=0.02
+REFRESH_TIME=0.01
 
 # holds a screen matrix in an associative array
 declare -A screen
@@ -491,7 +491,7 @@ check_full_line() {
 	done
     score+=${score_for_line_deletion[${#rows_to_remove[@]}]}
     lines_cleared+=${#rows_to_remove[@]}
-    level=$(( $start_level + $(( ${lines_cleared}/2 )) ))
+    level=$(( $start_level + $(( ${lines_cleared}/10 )) ))
     for row_to_delete in "${!rows_to_remove[@]}"
     do
         remove_row $row_to_delete
