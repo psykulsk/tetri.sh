@@ -35,6 +35,7 @@ declare -A next_piece_view
   
 declare -i score=0 
 declare -i level=1 
+declare -i start_level=1 
 declare -i lines_cleared=0 
 declare -i piece_id 
 declare -i next_piece_offset_cols
