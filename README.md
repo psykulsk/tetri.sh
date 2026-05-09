@@ -23,6 +23,7 @@ Requires `bash --version` >= 4.0. **Warning**, MacOS is distributed with bash 3 
 
 ### Other bash games
 * [shnake](https://github.com/psykulsk/shnake)
+* [rubik.sh](https://github.com/psykulsk/rubik.sh)
 
 ### Demo
 ![](demo.gif)
